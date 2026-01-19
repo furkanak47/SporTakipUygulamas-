@@ -1,0 +1,318 @@
+@model SporTakip.Models.MealLog
+
+@{
+    ViewData["Title"] = "Öğün Ekle";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            
+            <!-- Header -->
+            <div class="text-center mb-4 fade-in-down">
+                <h1 class="display-5 fw-bold text-gradient">🍽️ Öğün Ekle</h1>
+                <p class="text-muted lead">Bugün neler yedin?</p>
+            </div>
+
+            <div class="card shadow-lg border-0 glass-effect">
+                <div class="card-body p-4 p-md-5">
+                    
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger rounded-3 shadow-sm border-0 mb-4 fade-in">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Hata:</strong>
+                            <ul class="mb-0 mt-2 small">
+                                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                {
+                                    <li>@error.ErrorMessage</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    <form asp-action="Create" method="post" id="createForm" onsubmit="return formKontrol()">
+                        @Html.AntiForgeryToken()
+                        
+                        <!-- Yemek Seçimi -->
+                        <div class="mb-5">
+                            <label class="form-label fw-bold text-uppercase small text-muted text-spacing">Ne Yedin?</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden">
+                                <span class="input-group-text bg-dark border-0 text-primary ps-4"><i class="fs-4">🍔</i></span>
+                                <select id="yemekSecimi" asp-for="FoodId" class="form-select border-0 bg-dark text-white fw-bold ps-3" onchange="yemekDegisti()" required>
+                                    <option value="" data-gram="0" data-cal="0">-- Listeden Seçiniz --</option>
+                                    @foreach (var yemek in (IEnumerable<dynamic>)ViewBag.FoodList)
+                                    {
+                                        var gramPerServing = yemek.GramsPerServing;
+                                        // Güvenlik: Razor check
+                                        if (gramPerServing <= 0 || gramPerServing > 1000) gramPerServing = 100;
+                                        
+                                        <option value="@yemek.Id" data-gram="@gramPerServing" data-cal="@yemek.CaloriesPer100g">
+                                            @yemek.Name (@gramPerServing g/porsiyon)
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Hesaplama Modu Seçimi (Tabs) -->
+                        <ul class="nav nav-pills nav-fill mb-4 p-1 bg-dark rounded-pill justify-content-center" id="pills-tab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active rounded-pill fw-bold" id="pills-porsiyon-tab" data-bs-toggle="pill" data-bs-target="#pills-porsiyon" type="button" role="tab" aria-selected="true" onclick="modDegistir(false)">
+                                    🔘 Porsiyon
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link rounded-pill fw-bold" id="pills-gram-tab" data-bs-toggle="pill" data-bs-target="#pills-gram" type="button" role="tab" aria-selected="false" onclick="modDegistir(true)">
+                                    ⚖️ Gramaj (Manuel)
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab İçerikleri -->
+                        <div class="tab-content mb-4" id="pills-tabContent">
+                            
+                            <!-- Porsiyon Modu -->
+                            <div class="tab-pane fade show active" id="pills-porsiyon" role="tabpanel">
+                                <div class="bg-dark rounded-4 p-4 text-center border border-secondary border-opacity-25">
+                                    <label class="form-label text-success fw-bold">Kaç Porsiyon?</label>
+                                    <div class="d-flex align-items-center justify-content-center gap-3">
+                                        <button type="button" class="btn btn-outline-secondary rounded-circle p-0" style="width:40px;height:40px;" onclick="miktarDegis(-0.5)">
+                                            <i class="fs-5">-</i>
+                                        </button>
+                                        <input type="number" id="miktarAdedi" class="form-control form-control-lg text-center fw-bold bg-transparent border-0 text-white" 
+                                               style="width: 100px; font-size: 2rem;" 
+                                               value="1" step="0.5" min="0.5" max="20" onchange="hesapla()" oninput="hesapla()">
+                                        <button type="button" class="btn btn-outline-secondary rounded-circle p-0" style="width:40px;height:40px;" onclick="miktarDegis(0.5)">
+                                            <i class="fs-5">+</i>
+                                        </button>
+                                    </div>
+                                    <div class="text-muted mt-2 small" id="porsiyonBilgisi">1 Porsiyon = 100g</div>
+                                </div>
+                            </div>
+
+                            <!-- Gram Modu -->
+                            <div class="tab-pane fade" id="pills-gram" role="tabpanel">
+                                <div class="bg-dark rounded-4 p-4 text-center border border-secondary border-opacity-25">
+                                    <label class="form-label text-warning fw-bold">Net Gramaj (g)</label>
+                                    <div class="input-group justify-content-center">
+                                        <input type="number" id="manuelGram" class="form-control form-control-lg text-center fw-bold bg-transparent border-bottom border-0 border-warning text-white" 
+                                               style="width: 150px; font-size: 2rem;" 
+                                               placeholder="0" step="1" min="1" max="5000" oninput="manuelHesapla()" onkeyup="manuelHesapla()">
+                                    </div>
+                                    <div class="text-muted mt-2 small">Maksimum: 5000g</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Canlı Özet -->
+                        <div class="card bg-success bg-opacity-10 border-success border-opacity-25 mb-4">
+                            <div class="card-body text-center py-3">
+                                <div class="row align-items-center">
+                                    <div class="col-6 border-end border-secondary border-opacity-25">
+                                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">TOPLAM GRAM</small>
+                                        <h3 class="mb-0 fw-bold text-white"><span id="ozetGram">0</span> <span class="fs-6 text-muted">g</span></h3>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">TOPLAM KALORİ</small>
+                                        <h3 class="mb-0 fw-bold text-success"><span id="canliKalori">0</span> <span class="fs-6 text-success">kcal</span></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gizli Input -->
+                        <input asp-for="QuantityInGrams" id="gonderilecekGram" type="hidden" value="0" />
+
+                        <!-- Öğün Tipi -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-uppercase small text-muted text-spacing">Hangi Öğün?</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="MealType" id="meal1" value="Kahvaltı" checked>
+                                    <label class="btn btn-outline-light w-100 py-2 rounded-3" for="meal1">☕ Kahvaltı</label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="MealType" id="meal2" value="Öğle">
+                                    <label class="btn btn-outline-light w-100 py-2 rounded-3" for="meal2">☀️ Öğle</label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="MealType" id="meal3" value="Akşam">
+                                    <label class="btn btn-outline-light w-100 py-2 rounded-3" for="meal3">🌙 Akşam</label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="MealType" id="meal4" value="Ara Öğün">
+                                    <label class="btn btn-outline-light w-100 py-2 rounded-3" for="meal4">🍎 Ara Öğün</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 btn-lg shadow-lg fw-bold rounded-pill py-3">
+                            ✅ Günlüğe Kaydet
+                        </button>
+                        
+                        <div class="text-center mt-3">
+                             <a asp-action="Index" class="text-decoration-none text-muted small hover-underline">← İptal Et ve Geri Dön</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .glass-effect {
+        background: rgba(30, 30, 30, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+    .text-gradient {
+        background: linear-gradient(45deg, #00e676, #2979ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .text-spacing { letter-spacing: 1px; }
+    
+    .fade-in-down { animation: fadeInDown 0.8s ease-out; }
+    .fade-in { animation: fadeIn 0.8s ease-out; }
+    
+    @@keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .btn-check:checked + .btn-outline-light {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+        color: #000 !important;
+        font-weight: bold;
+    }
+
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+</style>
+
+<script>
+    let isManuelMode = false;
+
+    function modDegistir(isGram) {
+        isManuelMode = isGram;
+        hesapla();
+    }
+
+    function yemekDegisti() {
+        // Yemek değiştiğinde miktarı sıfırla
+        if(!isManuelMode) {
+            document.getElementById("miktarAdedi").value = 1;
+        } else {
+            document.getElementById("manuelGram").value = "";
+        }
+        hesapla();
+    }
+
+    function miktarDegis(deger) {
+        var kutu = document.getElementById("miktarAdedi");
+        var mevcut = parseFloat(kutu.value || 0);
+        var yeni = mevcut + deger;
+        if(yeni < 0.5) yeni = 0.5;
+        if(yeni > 20) yeni = 20;
+        kutu.value = yeni;
+        hesapla();
+    }
+    
+    function manuelHesapla() {
+        // Manuel mod tetiklendiğinde
+        hesapla();
+    }
+
+    function hesapla() {
+        var select = document.getElementById("yemekSecimi");
+        var secilen = select.options[select.selectedIndex];
+        
+        // Temizleme ve varsayılanlar
+        if (!secilen || secilen.value === "") {
+            guncelleUI(0, 0, 0);
+            return;
+        }
+
+        var porsiyonGram = parseFloat(secilen.getAttribute("data-gram")) || 100;
+        var kalori100g = parseFloat(secilen.getAttribute("data-cal")) || 0;
+        
+        // UI Güncellemesi (Info text)
+        document.getElementById("porsiyonBilgisi").innerText = "1 Porsiyon = " + porsiyonGram + "g";
+
+        var toplamGram = 0;
+
+        if (isManuelMode) {
+            // Manuel Gram Modu
+            var girilen = document.getElementById("manuelGram").value;
+            toplamGram = parseFloat(girilen) || 0;
+        } else {
+            // Porsiyon Modu
+            var adet = parseFloat(document.getElementById("miktarAdedi").value) || 1;
+            toplamGram = porsiyonGram * adet;
+        }
+
+        // Limit kontrolü
+        if (toplamGram > 5000) toplamGram = 5000;
+        if (toplamGram < 0) toplamGram = 0;
+
+        var toplamKalori = (toplamGram * kalori100g) / 100;
+
+        guncelleUI(toplamGram, toplamKalori);
+    }
+
+    function guncelleUI(gram, kalori) {
+        // Ekranda göster (Yuvarlak hesap)
+        document.getElementById("ozetGram").innerText = Math.round(gram);
+        document.getElementById("canliKalori").innerText = Math.round(kalori);
+
+        // Gizli Input'a yaz (BUG FIX: Nokta yerine Virgül kullan)
+        // JS'de toFixed(2) "100.00" döner. TR sunucu "100,00" bekler.
+        
+        var hiddenInput = document.getElementById("gonderilecekGram");
+        
+        // String'e çevir ve noktayı virgüle dönüştür (TR desteği için)
+        var strVal = gram.toFixed(2).replace('.', ',');
+        
+        hiddenInput.value = strVal;
+        
+        console.log("Hesaplanan:", gram, "Gönderilen:", strVal);
+    }
+    
+    function formKontrol() {
+        var select = document.getElementById("yemekSecimi");
+        if (!select || select.value === "") {
+            alert("Lütfen bir yemek seçin!");
+            return false;
+        }
+        
+        // Son bir hesaplama yap
+        hesapla();
+        
+        var val = document.getElementById("gonderilecekGram").value;
+        // Basit kontrol (virgül veya nokta ayırt etmeden değer var mı)
+        if(val === "0" || val === "0,00" || val === "0.00") {
+             alert("Lütfen geçerli bir miktar girin!");
+             return false;
+        }
+        
+        return true;
+    }
+
+    // İlk yükleme
+    document.addEventListener("DOMContentLoaded", function() {
+        // Formu temizle
+        document.getElementById("gonderilecekGram").value = "0";
+        document.getElementById("miktarAdedi").value = "1";
+        
+        // Eğer geri dönüldüyse ve seçim varsa hesapla
+        if (document.getElementById("yemekSecimi").value !== "") {
+            hesapla();
+        }
+    });
+</script>

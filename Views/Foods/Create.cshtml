@@ -1,0 +1,54 @@
+@model SporTakip.Models.Food
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4>Yeni Besin Ekle</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create">
+                        <div class="mb-3">
+                            <label class="form-label">Besin Adı</label>
+                            <input asp-for="Name" class="form-control" placeholder="Örn: Haşlanmış Tavuk" required />
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Kalori (100g)</label>
+                                <input asp-for="CaloriesPer100g" class="form-control" type="number" step="0.1" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Protein (g)</label>
+                                <input asp-for="ProteinPer100g" class="form-control" type="number" step="0.1" required />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Karbonhidrat (g)</label>
+                                <input asp-for="CarbsPer100g" class="form-control" type="number" step="0.1" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Yağ (g)</label>
+                                <input asp-for="FatPer100g" class="form-control" type="number" step="0.1" required />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">1 Porsiyon Kaç Gram? (g)</label>
+                            <input asp-for="GramsPerServing" class="form-control" type="number" step="0.1" min="1" max="1000" value="100" required />
+                            <small class="form-text text-muted">Örn: 1 elma = 120g, 1 porsiyon kebap = 150g</small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Kaydet</button>
+                            <a asp-action="Index" class="btn btn-secondary">İptal</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

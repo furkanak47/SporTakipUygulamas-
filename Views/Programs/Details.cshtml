@@ -1,0 +1,56 @@
+@model SporTakip.Models.WorkoutProgram
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>✏️ @Model.Name Düzenleniyor</h2>
+        <a asp-action="Index" class="btn btn-outline-secondary">Geri Dön</a>
+    </div>
+
+    <div class="card shadow mb-4 border-primary">
+        <div class="card-header bg-primary text-white">Programa Hareket Ekle</div>
+        <div class="card-body">
+            <form asp-action="AddItem" method="post" class="row g-2">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="programId" value="@Model.Id" />
+                
+                <div class="col-md-4">
+                    <select name="exerciseId" class="form-select" required>
+                        @foreach (var egzersiz in (IEnumerable<dynamic>)ViewBag.ExerciseList)
+                        {
+                            <option value="@egzersiz.Id">@egzersiz.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" name="sets" class="form-control" placeholder="Set (Örn: 3)" value="3" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" name="reps" class="form-control" placeholder="Tekrar (Örn: 10)" value="10" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100">+ Ekle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Hareket</th>
+                <th>Hedef Set</th>
+                <th>Hedef Tekrar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.Exercise.Name</td>
+                    <td>@item.DefaultSets</td>
+                    <td>@item.DefaultReps</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

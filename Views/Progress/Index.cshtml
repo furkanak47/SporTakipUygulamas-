@@ -1,0 +1,178 @@
+@model IEnumerable<SporTakip.Models.UserProgress>
+
+@{
+    var ordered = Model.OrderBy(x => x.Date).ToList();
+    var first = ordered.FirstOrDefault();
+    var last = ordered.LastOrDefault();
+    double startWeight = first?.Weight ?? 0;
+    double endWeight = last?.Weight ?? 0;
+    double delta = endWeight - startWeight;
+    double toplamDegisim = Math.Round(delta, 1);
+
+    double haftalar = ordered.Any()
+        ? Math.Max(1, (ordered.Last().Date - ordered.First().Date).TotalDays / 7.0)
+        : 0;
+    double haftalikOrtalama = haftalar > 0 ? Math.Round(delta / haftalar, 2) : 0;
+}
+
+<div class="container mt-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📈 Kilo ve Gelişim Analizi</h2>
+        <a asp-action="Create" class="btn btn-success">⚖️ Yeni Kilo Ekle</a>
+    </div>
+
+    <div class="row mb-4 g-3">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Toplam Değişim</h6>
+                    <h2 class="fw-bold mb-2 @((toplamDegisim < 0) ? "text-success" : (toplamDegisim > 0 ? "text-danger" : "text-white"))">
+                        @toplamDegisim kg
+                    </h2>
+                    <small class="text-muted">
+                        Başlangıç: <span class="text-white">@startWeight kg</span> • Son: <span class="text-white">@endWeight kg</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Ortalama Haftalık Değişim</h6>
+                    <h2 class="fw-bold mb-2 @((haftalikOrtalama < 0) ? "text-success" : (haftalikOrtalama > 0 ? "text-danger" : "text-white"))">
+                        @haftalikOrtalama kg/hafta
+                    </h2>
+                    <small class="text-muted">
+                        Sağlıklı kilo değişimi genelde ±0.25–0.75 kg/hafta aralığındadır.
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Kayıt Sayısı</h6>
+                    <h2 class="fw-bold mb-2 text-white">@ordered.Count</h2>
+                    <small class="text-muted">
+                        Ne kadar çok ölçüm, o kadar net grafik.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <canvas id="kiloGrafigi" style="max-height: 400px;"></canvas>
+        </div>
+    </div>
+
+    <h4 class="text-white mb-3">Geçmiş Kayıtlar</h4>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th class="text-primary">Tarih</th>
+                <th class="text-primary">Kilo</th>
+                <th class="text-primary">İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.OrderByDescending(x => x.Date))
+            {
+                <tr>
+                    <td class="text-white">@item.Date.ToString("dd MMMM yyyy HH:mm")</td>
+                    <td class="text-white fw-bold">@item.Weight kg</td>
+                    <td>
+                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bu kaydı silmek istediğine emin misin?');">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // C# tarafındaki verileri Javascript'e aktarıyoruz
+    var tarihler = @Html.Raw(Json.Serialize(Model.Select(x => x.Date.ToString("dd MMM"))));
+    var kilolar = @Html.Raw(Json.Serialize(Model.Select(x => x.Weight)));
+
+    var ctx = document.getElementById('kiloGrafigi').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: tarihler,
+            datasets: [{
+                label: 'Kilo Değişimi',
+                data: kilolar,
+                borderColor: '#00e676',
+                backgroundColor: 'rgba(0, 230, 118, 0.2)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#00e676',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { 
+                    display: true,
+                    labels: {
+                        color: '#e0e0e0',
+                        font: {
+                            size: 14,
+                            family: 'Poppins'
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                    titleColor: '#00e676',
+                    bodyColor: '#e0e0e0',
+                    borderColor: '#00e676',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: '#a0a0a0',
+                        font: {
+                            family: 'Poppins'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    }
+                },
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        color: '#a0a0a0',
+                        font: {
+                            family: 'Poppins'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    }
+                }
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutQuart'
+            }
+        }
+    });
+</script>

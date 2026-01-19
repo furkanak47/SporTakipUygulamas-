@@ -1,0 +1,259 @@
+@model IEnumerable<SporTakip.Models.MealLog>
+
+@{
+    ViewData["Title"] = "Günlük";
+
+    // HESAPLAMALAR
+    double topKal = Model.Sum(x => (x.Food.CaloriesPer100g * x.QuantityInGrams) / 100);
+    double topPro = Model.Sum(x => (x.Food.ProteinPer100g * x.QuantityInGrams) / 100);
+    double topYag = Model.Sum(x => (x.Food.FatPer100g * x.QuantityInGrams) / 100);
+    double topKarb = Model.Sum(x => (x.Food.CarbsPer100g * x.QuantityInGrams) / 100);
+
+    int hedefKal = ViewBag.HedefKalori ?? 2000;
+    int hedefPro = ViewBag.HedefProtein ?? 150;
+    int hedefYag = ViewBag.HedefYag ?? 70;
+    int hedefKarb = ViewBag.HedefKarb ?? 250;
+
+    int yuzdeKal = hedefKal > 0 ? (int)((topKal / hedefKal) * 100) : 0;
+    int yuzdePro = hedefPro > 0 ? (int)((topPro / hedefPro) * 100) : 0;
+    int yuzdeYag = hedefYag > 0 ? (int)((topYag / hedefYag) * 100) : 0;
+    int yuzdeKarb = hedefKarb > 0 ? (int)((topKarb / hedefKarb) * 100) : 0;
+}
+
+<div class="container mt-4 pb-5">
+    
+    <!-- Başlık -->
+    <div class="d-flex justify-content-between align-items-center mb-4 fade-in-down">
+        <div>
+            <h1 class="fw-bold text-white mb-0">Bugünün Özeti</h1>
+            <p class="text-muted small">@DateTime.Now.ToString("dd MMMM dddd")</p>
+        </div>
+        <a asp-action="Create" class="btn btn-primary rounded-pill px-4 py-2 shadow-lg fw-bold hover-scale">
+            <span class="fs-5 align-middle me-1">+</span> Yemek Ekle
+        </a>
+    </div>
+
+    <!-- Dashboard Kartları -->
+    <div class="row g-4 mb-4">
+        <!-- Kalori Kartı -->
+        <div class="col-lg-5 fade-in-up" style="animation-delay: 0.1s;">
+            <div class="card h-100 border-0 glass-card position-relative overflow-hidden">
+                <div class="card-body p-4 d-flex flex-column justify-content-between text-center">
+                    <h5 class="text-muted text-uppercase fw-bold ls-1 mb-3">Günlük Enerji</h5>
+                    
+                    <div class="position-relative d-inline-block mx-auto mb-3" style="width: 180px; height: 180px;">
+                        <!-- Circular Progress SVG will go here or simple distinct display -->
+                        <div class="d-flex align-items-center justify-content-center border-4 border border-secondary border-opacity-25 rounded-circle w-100 h-100 position-relative">
+                            
+                             <!-- SVG Circle -->
+                            <svg class="position-absolute" width="180" height="180" viewBox="0 0 180 180" style="transform: rotate(-90deg);">
+                                <circle cx="90" cy="90" r="80" stroke="#333" stroke-width="10" fill="none" />
+                                <circle cx="90" cy="90" r="80" stroke="@(yuzdeKal > 100 ? "#ff1744" : "#00e676")" stroke-width="10" fill="none" 
+                                        stroke-dasharray="502" stroke-dashoffset="@(502 - (502 * Math.Min(yuzdeKal, 100) / 100))" 
+                                        style="transition: stroke-dashoffset 1s ease-out;" />
+                            </svg>
+
+                            <div class="z-1">
+                                <h1 class="display-4 fw-bold mb-0 text-white">@topKal.ToString("0")</h1>
+                                <small class="text-muted">/ @hedefKal kcal</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        @if (topKal > hedefKal)
+                        {
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">
+                                ⚠️ Hedef Aşıldı
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
+                                🔥 Harika Gidiyorsun
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Makrolar Kartı -->
+        <div class="col-lg-7 fade-in-up" style="animation-delay: 0.2s;">
+            <div class="card h-100 border-0 glass-card">
+                <div class="card-body p-4">
+                    <h5 class="text-muted text-uppercase fw-bold ls-1 mb-4">Besin Değerleri</h5>
+
+                    <!-- Protein -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2 align-items-end">
+                            <span class="fw-bold text-warning"><i class="bi bi-egg-fried me-2"></i>Protein</span>
+                            <span class="text-white small">@topPro.ToString("0") <span class="text-muted">/ @hedefPro g</span></span>
+                        </div>
+                        <div class="progress rounded-pill bg-dark" style="height: 12px;">
+                            <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: @Math.Min(yuzdePro, 100)%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Yağ -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2 align-items-end">
+                            <span class="fw-bold text-info"><i class="bi bi-droplet-fill me-2"></i>Yağ</span>
+                            <span class="text-white small">@topYag.ToString("0") <span class="text-muted">/ @hedefYag g</span></span>
+                        </div>
+                        <div class="progress rounded-pill bg-dark" style="height: 12px;">
+                            <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: @Math.Min(yuzdeYag, 100)%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Karbonhidrat -->
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between mb-2 align-items-end">
+                            <span class="fw-bold text-success"><i class="bi bi-bread-slice me-2"></i>Karbonhidrat</span>
+                            <span class="text-white small">@topKarb.ToString("0") <span class="text-muted">/ @hedefKarb g</span></span>
+                        </div>
+                        <div class="progress rounded-pill bg-dark" style="height: 12px;">
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: @Math.Min(yuzdeKarb, 100)%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yemek Listesi -->
+    <div class="card border-0 glass-card shadow-lg fade-in-up" style="animation-delay: 0.3s;">
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+             <h5 class="mb-0 text-white fw-bold">🍽️ Tüketilen Besinler</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle custom-table">
+                <thead class="bg-dark text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Öğün</th>
+                        <th>Yemek</th>
+                        <th>Miktar</th>
+                        <th>Kalori</th>
+                        <th class="d-none d-md-table-cell">Makrolar (P/Y/K)</th>
+                        <th class="text-end pe-4">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var k = (item.Food.CaloriesPer100g * item.QuantityInGrams) / 100;
+                        var p = (item.Food.ProteinPer100g * item.QuantityInGrams) / 100;
+                        var f = (item.Food.FatPer100g * item.QuantityInGrams) / 100;
+                        var c = (item.Food.CarbsPer100g * item.QuantityInGrams) / 100;
+
+                        var badgeColor = item.MealType switch {
+                            "Kahvaltı" => "bg-warning text-dark",
+                            "Öğle" => "bg-info text-dark",
+                            "Akşam" => "bg-primary text-white",
+                            _ => "bg-secondary text-white"
+                        };
+
+                        <tr>
+                            <td class="ps-4">
+                                <span class="badge rounded-pill @badgeColor bg-opacity-75 border-0">@item.MealType</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-white">@item.Food.Name</span>
+                            </td>
+                            <td>
+                                <span class="text-muted">@item.QuantityInGrams.ToString("0") g</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success">@k.ToString("0") kcal</span>
+                            </td>
+                            <td class="d-none d-md-table-cell text-muted small">
+                                <span class="text-warning">@p.ToString("0")p</span> / 
+                                <span class="text-info">@f.ToString("0")y</span> / 
+                                <span class="text-success">@c.ToString("0")k</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="button" class="btn btn-sm btn-icon btn-outline-danger rounded-circle" onclick="if(confirm('Silmek istediğine emin misin?')) this.form.submit();">
+                                        X
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="text-muted opacity-50 mb-2" style="font-size: 3rem;">🥗</div>
+                                <h5 class="text-muted">Henüz hiç yemek eklenmedi.</h5>
+                                <a asp-action="Create" class="btn btn-sm btn-outline-primary mt-2 rounded-pill px-3">İlk Öğününü Ekle</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .glass-card {
+        background: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 1.5rem;
+    }
+    
+    .ls-1 { letter-spacing: 1px; }
+
+    .custom-table th {
+        background-color: rgba(0,0,0,0.2) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        font-weight: 600;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    
+    .custom-table td {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .custom-table tr:hover td {
+        background-color: rgba(255,255,255,0.03);
+    }
+    
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        line-height: 30px;
+        text-align: center;
+    }
+
+    .hover-scale { transition: transform 0.2s; }
+    .hover-scale:hover { transform: scale(1.05); }
+
+    .fade-in-up {
+        opacity: 0;
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    .fade-in-down {
+        opacity: 0;
+        animation: fadeInDown 0.6s ease-out forwards;
+    }
+
+    @@keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @@keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>

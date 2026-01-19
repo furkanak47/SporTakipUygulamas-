@@ -1,0 +1,70 @@
+@model IEnumerable<SporTakip.Models.WorkoutLog>
+
+@{
+    double toplamYakilan = Model.Sum(x => x.CaloriesBurned);
+    double toplamSure = Model.Sum(x => x.DurationMinutes);
+}
+
+<div class="container mt-4">
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-dark text-white shadow">
+                <div class="card-body text-center">
+                    <h2 class="display-4 text-warning">🔥 @toplamYakilan.ToString("0") kcal</h2>
+                    <p class="mb-0">Bugün Sporla Yakılan</p>
+                    <small class="text-muted">Toplam Süre: @toplamSure dk</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>💪 Bugünkü Antrenmanların</h3>
+        <a asp-action="Create" class="btn btn-warning shadow">+ Antrenman Ekle</a>
+    </div>
+
+    <table class="table table-hover shadow-sm">
+        <thead>
+            <tr>
+                <th>Egzersiz</th>
+                <th>Süre</th>
+                <th>Yakılan</th>
+                <th>Saat</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        <strong>@item.Exercise.Name</strong>
+                        @if(item.Sets > 0)
+                        {
+                            <br>
+                            <span class="badge bg-secondary" style="font-size:0.8em">
+                                @item.Sets Set x @item.Reps Tekrar (@item.Weight kg)
+                            </span>
+                        }
+                    </td>
+                    <td>@item.DurationMinutes dk</td>
+                    <td class="text-success fw-bold">-@item.CaloriesBurned.ToString("0") kcal</td>
+                    <td>@item.Date.ToString("HH:mm")</td>
+                    <td>
+                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bu antrenmanı silmek istediğine emin misin?');">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    
+    @if (!Model.Any())
+    {
+        <div class="alert alert-secondary text-center">
+            Bugün henüz spor yapmadın. Hadi hareket et! 🏃‍♂️
+        </div>
+    }
+</div>

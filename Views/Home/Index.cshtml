@@ -1,0 +1,310 @@
+﻿@model SporTakip.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+@if (User.Identity.IsAuthenticated)
+{
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-6 fw-bold">Merhaba, <span style="color:var(--primary-color)">@Model.UserName</span>! 👋</h1>
+            <p class="text-muted">Bugün kendini nasıl hissediyorsun? Hedeflerine odaklan!</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <span class="badge bg-dark border border-secondary p-2">📅 @Model.Today.ToString("dd MMMM yyyy")</span>
+        </div>
+    </div>
+
+    <!-- Kalori Özeti Kartları -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card h-100 border-0" style="background: linear-gradient(135deg, #1e1e1e, #252525);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="p-3 rounded-circle" style="background: rgba(0, 230, 118, 0.1);">
+                            <i class="bi bi-egg-fried fs-3" style="color: var(--primary-color)"></i>
+                        </div>
+                        <span class="badge bg-success rounded-pill">+ Alınan</span>
+                    </div>
+                    <h2 class="fw-bold text-white mb-0">@Model.CaloriesIn <small class="fs-6 text-muted">kcal</small></h2>
+                    @if (Model.TargetCalories.HasValue)
+                    {
+                        <p class="text-muted small mb-2">Hedef: @Model.TargetCalories kcal</p>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar @(Model.CaloriesProgress > 100 ? "bg-danger" : "bg-success")" 
+                                 style="width: @Math.Min(Model.CaloriesProgress, 100)%"></div>
+                        </div>
+                        <p class="text-muted small mt-2">@Model.CaloriesProgress% tamamlandı</p>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mt-2">Hedef belirlenmemiş</p>
+                    }
+                    <a asp-controller="Meals" asp-action="Create" class="btn btn-outline-light btn-sm w-100 rounded-pill mt-2">Yemek Ekle</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 border-0" style="background: linear-gradient(135deg, #1e1e1e, #252525);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="p-3 rounded-circle" style="background: rgba(255, 145, 0, 0.1);">
+                            <i class="bi bi-fire fs-3" style="color: var(--secondary-color)"></i>
+                        </div>
+                        <span class="badge bg-warning text-dark rounded-pill">- Yakılan</span>
+                    </div>
+                    <h2 class="fw-bold text-white mb-0">@Model.CaloriesOut <small class="fs-6 text-muted">kcal</small></h2>
+                    <p class="text-muted small mt-2">
+                        @if (Model.TotalWorkoutMinutesToday > 0)
+                        {
+                            <span class="d-block small text-success">
+                                @Model.TotalWorkoutMinutesToday dk • @Model.TotalWorkoutsToday antrenman
+                            </span>
+                        }
+                        else
+                        {
+                            <span>Henüz antrenman yok</span>
+                        }
+                    </p>
+                    <a asp-controller="Workouts" asp-action="Create" class="btn btn-outline-light btn-sm w-100 rounded-pill mt-2">Antrenman Ekle</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 border-0" style="background: linear-gradient(135deg, #1e1e1e, #252525);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="p-3 rounded-circle" style="background: rgba(41, 121, 255, 0.1);">
+                            <i class="bi bi-calculator fs-3" style="color: var(--secondary-color)"></i>
+                        </div>
+                        <span class="badge bg-info rounded-pill">Net</span>
+                    </div>
+                    <h2 class="fw-bold text-white mb-0" style="color: @(Model.NetCalories < 0 ? "#ff1744" : "#00e676")">
+                        @Model.NetCalories <small class="fs-6 text-muted">kcal</small>
+                    </h2>
+                    <p class="text-muted small mt-2">
+                        @if (Model.NetCalories < 0)
+                        {
+                            <span class="text-danger">Kalori açığı var</span>
+                        }
+                        else if (Model.NetCalories > 0)
+                        {
+                            <span class="text-success">Kalori fazlası var</span>
+                        }
+                        else
+                        {
+                            <span>Dengeli</span>
+                        }
+                    </p>
+                    @if (Model.TargetCalories.HasValue)
+                    {
+                        var kalanKalori = Model.TargetCalories.Value - Model.NetCalories;
+                        <p class="text-muted small mb-0">
+                            Kalan: <strong class="text-white">@kalanKalori kcal</strong>
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card h-100 border-0 text-center" style="background: linear-gradient(135deg, #1e1e1e, #252525);">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h5 class="text-muted mb-3">Vücut Kitle Endeksi</h5>
+                    @if(Model.Bmi != null)
+                    {
+                        <h1 class="display-3 fw-bold mb-0" style="color: @(Model.BmiBadgeColor == "success" ? "#00e676" : (Model.BmiBadgeColor == "warning" ? "#ff9100" : "#ff1744"))">
+                            @Model.Bmi
+                        </h1>
+                        <span class="badge bg-@Model.BmiBadgeColor text-dark rounded-pill mx-auto mt-2 px-3">@Model.BmiStatus</span>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Profil verilerin eksik.</p>
+                        <a asp-controller="Settings" asp-action="Index" class="btn btn-primary btn-sm rounded-pill">Profil Oluştur</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Makro Besinler -->
+    @if (Model.TargetProtein.HasValue || Model.TargetFat.HasValue || Model.TargetCarbs.HasValue)
+    {
+        <div class="card border-0 mb-4" style="background: linear-gradient(135deg, #1e1e1e, #252525);">
+            <div class="card-header border-0 pb-0">
+                <h5 class="text-white mb-0"><i class="bi bi-pie-chart"></i> Makro Besinler</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted"><i class="bi bi-droplet-fill text-warning"></i> Protein</span>
+                            <span class="fw-bold text-white">@Model.ProteinIn.ToString("0") / @(Model.TargetProtein?.ToString() ?? "0") g</span>
+                        </div>
+                        <div class="progress" style="height: 12px;">
+                            <div class="progress-bar bg-warning" style="width: @Math.Min(Model.ProteinProgress, 100)%"></div>
+                        </div>
+                        <small class="text-muted">@Model.ProteinProgress%</small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted"><i class="bi bi-circle-fill text-info"></i> Yağ</span>
+                            <span class="fw-bold text-white">@Model.FatIn.ToString("0") / @(Model.TargetFat?.ToString() ?? "0") g</span>
+                        </div>
+                        <div class="progress" style="height: 12px;">
+                            <div class="progress-bar bg-info" style="width: @Math.Min(Model.FatProgress, 100)%"></div>
+                        </div>
+                        <small class="text-muted">@Model.FatProgress%</small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted"><i class="bi bi-circle-fill text-success"></i> Karbonhidrat</span>
+                            <span class="fw-bold text-white">@Model.CarbsIn.ToString("0") / @(Model.TargetCarbs?.ToString() ?? "0") g</span>
+                        </div>
+                        <div class="progress" style="height: 12px;">
+                            <div class="progress-bar bg-success" style="width: @Math.Min(Model.CarbsProgress, 100)%"></div>
+                        </div>
+                        <small class="text-muted">@Model.CarbsProgress%</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Haftalık Kalori Grafiği -->
+    <div class="card border-0 mb-4" style="background: linear-gradient(135deg, #1e1e1e, #252525);">
+        <div class="card-header border-0 pb-0">
+            <h5 class="text-white mb-0"><i class="bi bi-graph-up"></i> Son 7 Günün Kalori Takibi</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="weeklyCaloriesChart" style="max-height: 300px;"></canvas>
+        </div>
+    </div>
+
+    <h4 class="mb-3 text-white">Hızlı Erişim</h4>
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
+            <a asp-controller="Programs" asp-action="Index" class="card text-center text-decoration-none h-100 py-3">
+                <i class="bi bi-clipboard-data fs-1 mb-2 text-primary"></i>
+                <h6 class="text-light">Programlarım</h6>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+             <a asp-controller="Progress" asp-action="Index" class="card text-center text-decoration-none h-100 py-3">
+                <i class="bi bi-graph-up-arrow fs-1 mb-2 text-info"></i>
+                <h6 class="text-light">Kilo Grafiği</h6>
+            </a>
+        </div>
+         <div class="col-6 col-md-3">
+             <a asp-controller="Tips" asp-action="Index" class="card text-center text-decoration-none h-100 py-3">
+                <i class="bi bi-lightbulb fs-1 mb-2 text-warning"></i>
+                <h6 class="text-light">İpuçları</h6>
+            </a>
+        </div>
+         <div class="col-6 col-md-3">
+             <a asp-controller="Settings" asp-action="Index" class="card text-center text-decoration-none h-100 py-3">
+                <i class="bi bi-gear fs-1 mb-2 text-secondary"></i>
+                <h6 class="text-light">Ayarlar</h6>
+            </a>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            // Haftalık kalori grafiği
+            fetch('/api/api/weekly-calories')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('weeklyCaloriesChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.map(d => d.date),
+                            datasets: [
+                                {
+                                    label: 'Alınan Kalori',
+                                    data: data.map(d => d.caloriesIn),
+                                    backgroundColor: 'rgba(0, 230, 118, 0.6)',
+                                    borderColor: '#00e676',
+                                    borderWidth: 2
+                                },
+                                {
+                                    label: 'Yakılan Kalori',
+                                    data: data.map(d => d.caloriesOut),
+                                    backgroundColor: 'rgba(255, 145, 0, 0.6)',
+                                    borderColor: '#ff9100',
+                                    borderWidth: 2
+                                },
+                                {
+                                    label: 'Net Kalori',
+                                    data: data.map(d => d.netCalories),
+                                    backgroundColor: 'rgba(41, 121, 255, 0.6)',
+                                    borderColor: '#2979ff',
+                                    borderWidth: 2,
+                                    type: 'line',
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: '#e0e0e0',
+                                        font: { family: 'Poppins', size: 12 }
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+                                    titleColor: '#00e676',
+                                    bodyColor: '#e0e0e0',
+                                    borderColor: '#00e676',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: { color: '#a0a0a0', font: { family: 'Poppins' } },
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                                },
+                                y: {
+                                    ticks: { color: '#a0a0a0', font: { family: 'Poppins' } },
+                                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                                }
+                            },
+                            animation: {
+                                duration: 1500,
+                                easing: 'easeInOutQuart'
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Grafik yüklenirken hata:', error));
+        </script>
+    }
+}
+else
+{
+    <div class="row align-items-center" style="min-height: 70vh;">
+        <div class="col-md-6">
+            <h1 class="display-3 fw-bold mb-3">En İyi <span style="color:var(--primary-color)">Sen</span> Ol.</h1>
+            <p class="lead text-muted mb-5">
+                Beslenmeni takip et, antrenmanlarını kaydet ve hedeflerine ulaş. 
+                SporTakip ile disiplin artık çok kolay.
+            </p>
+            <div class="d-flex gap-3">
+                <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg px-5 rounded-pill shadow-lg">Giriş Yap</a>
+                <a asp-controller="Account" asp-action="Register" class="btn btn-outline-light btn-lg px-5 rounded-pill">Kayıt Ol</a>
+            </div>
+        </div>
+        <div class="col-md-6 d-none d-md-block text-center">
+            <i class="bi bi-activity" style="font-size: 15rem; color: rgba(255,255,255,0.05);"></i>
+        </div>
+    </div>
+}

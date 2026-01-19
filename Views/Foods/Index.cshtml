@@ -1,0 +1,36 @@
+@model IEnumerable<SporTakip.Models.Food>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>🥗 Besin Listesi</h2>
+        <a asp-action="Create" class="btn btn-success">+ Yeni Besin Ekle</a>
+    </div>
+
+    <table class="table table-hover shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Yemek Adı</th>
+                <th>Kalori (100g)</th>
+                <th>Protein</th>
+                <th>Karbonhidrat</th>
+                <th>Yağ</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td>@item.CaloriesPer100g kcal</td>
+                    <td>@item.ProteinPer100g g</td>
+                    <td>@item.CarbsPer100g g</td>
+                    <td>@item.FatPer100g g</td>
+                    <td>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger" onclick="return confirm('Silmek istediğine emin misin?');">Sil</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

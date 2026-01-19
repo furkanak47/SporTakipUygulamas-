@@ -1,0 +1,89 @@
+@model SporTakip.Models.WorkoutLog
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h4>💪 Antrenman Gir</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Hareket Seç</label>
+                            <select id="sporSecimi" asp-for="ExerciseId" class="form-select form-select-lg" onchange="formuAyarla()">
+                                <option value="" data-cat="" data-cal="0">-- Seçiniz --</option>
+                                @foreach (var egzersiz in (IEnumerable<dynamic>)ViewBag.ExerciseList)
+                                {
+                                    <option value="@egzersiz.Id" data-cat="@egzersiz.Category" data-cal="@egzersiz.CaloriesPerHour">
+                                        @egzersiz.Name (@egzersiz.Category)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Toplam Süre (Dakika)</label>
+                            <input asp-for="DurationMinutes" id="sureKutusu" type="number" class="form-control" value="45" onkeyup="hesapla()" />
+                            <small class="text-muted">Set araları dahil antrenman süresi.</small>
+                        </div>
+
+                        <div id="agirlikAlani" style="display:none; background-color: var(--bg-card); border-color: rgba(255,255,255,0.1) !important;" class="p-3 border rounded mb-3">
+                            <h6 class="text-primary">🏋️‍♂️ Set Detayları (İsteğe Bağlı)</h6>
+                            <div class="row">
+                                <div class="col-4">
+                                    <label>Set</label>
+                                    <input asp-for="Sets" class="form-control" type="number" placeholder="3" />
+                                </div>
+                                <div class="col-4">
+                                    <label>Tekrar</label>
+                                    <input asp-for="Reps" class="form-control" type="number" placeholder="12" />
+                                </div>
+                                <div class="col-4">
+                                    <label>Kilo(kg)</label>
+                                    <input asp-for="Weight" class="form-control" type="number" placeholder="40" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info text-center">
+                            <h2 class="fw-bold" id="yakilanKalori">0</h2>
+                            <small>Tahmini Yakılan Kalori (kcal)</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-dark w-100 btn-lg">Antrenmanı Kaydet</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function formuAyarla() {
+        var select = document.getElementById("sporSecimi");
+        var secilen = select.options[select.selectedIndex];
+        var kategori = secilen.getAttribute("data-cat");
+
+        // Eğer kategori "Agirlik" ise detay kutusunu göster, değilse gizle
+        if (kategori === "Agirlik") {
+            document.getElementById("agirlikAlani").style.display = "block";
+        } else {
+            document.getElementById("agirlikAlani").style.display = "none";
+        }
+        
+        hesapla();
+    }
+
+    function hesapla() {
+        var select = document.getElementById("sporSecimi");
+        var saatlikKalori = parseFloat(select.options[select.selectedIndex].getAttribute("data-cal")) || 0;
+        var sure = parseFloat(document.getElementById("sureKutusu").value) || 0;
+
+        // Formül: (Dakika / 60) * SaatlikKalori
+        var sonuc = (sure / 60) * saatlikKalori;
+        document.getElementById("yakilanKalori").innerText = Math.round(sonuc);
+    }
+</script>
